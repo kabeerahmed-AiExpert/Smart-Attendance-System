@@ -9,6 +9,7 @@ tornado>=6.0.0
 # Core ML
 tensorflow-cpu>=2.10.0
 numpy>=1.21.0
+scipy>=1.7.0
 
 # Face Detection
 mtcnn>=0.1.1
