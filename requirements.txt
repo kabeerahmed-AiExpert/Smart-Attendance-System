@@ -7,7 +7,7 @@ streamlit>=1.30.0
 tornado>=6.0.0
 
 # Core ML
-tensorflow-cpu>=2.10.0
+tensorflow-cpu==2.15.1
 numpy>=1.21.0
 scipy>=1.7.0
 
