@@ -6,7 +6,7 @@
 streamlit>=1.30.0
 
 # Core ML
-tensorflow>=2.10.0
+tensorflow-cpu>=2.10.0
 numpy>=1.21.0
 
 # Face Detection
