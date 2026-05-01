@@ -1,0 +1,37 @@
+Smart Attendance System - Evaluation Results
+==================================================
+
+Metric       : cosine
+Threshold    : 0.7
+
+Total Samples     : 59
+Correct           : 55
+False Accepts     : 0
+False Rejects     : 4
+
+Accuracy          : 93.22%
+FAR               : 0.00%
+FRR               : 6.78%
+
+Per-Student Results:
+--------------------------------------------------
+  F24ARI019_M.Raza: 2/2 correct (100.0%), FA=0, FR=0
+  F24ARI099_Waqar: 3/4 correct (75.0%), FA=0, FR=1
+  F24ARI102_Adil: 2/2 correct (100.0%), FA=0, FR=0
+  F24ARI103_Asif: 1/1 correct (100.0%), FA=0, FR=0
+  F24ARI104_Asif: 1/1 correct (100.0%), FA=0, FR=0
+  F24ARI105_Waqas: 5/5 correct (100.0%), FA=0, FR=0
+  F24ARI106_Shahzaib: 2/2 correct (100.0%), FA=0, FR=0
+  F24ARI109_Hassnain: 2/3 correct (66.7%), FA=0, FR=1
+  F24ARI112_Maryam: 1/2 correct (50.0%), FA=0, FR=1
+  F24ARI116_Keenjhar: 4/4 correct (100.0%), FA=0, FR=0
+  F24ARI122_Hassan: 3/3 correct (100.0%), FA=0, FR=0
+  F24ARI123_Darshan: 10/10 correct (100.0%), FA=0, FR=0
+  F24ARI127_Saima: 0/1 correct (0.0%), FA=0, FR=1
+  F24ARI128_Shayan: 2/2 correct (100.0%), FA=0, FR=0
+  F24ARI129_Kabeer: 6/6 correct (100.0%), FA=0, FR=0
+  F24ARI131_SaifUllah: 2/2 correct (100.0%), FA=0, FR=0
+  F24ARI133_Hira: 1/1 correct (100.0%), FA=0, FR=0
+  F24ARI157_GhulamAbbas: 3/3 correct (100.0%), FA=0, FR=0
+  F24ARI176_Mazhar: 2/2 correct (100.0%), FA=0, FR=0
+  F24ARI_Wahab: 3/3 correct (100.0%), FA=0, FR=0

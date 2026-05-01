@@ -1,0 +1,27 @@
+# Smart Attendance System — Streamlit + FaceNet
+# ==============================================
+# Install: pip install -r requirements.txt
+
+# Web Framework
+streamlit>=1.30.0
+
+# Core ML
+tensorflow>=2.10.0
+numpy>=1.21.0
+
+# Face Detection
+mtcnn>=0.1.1
+
+# FaceNet Embeddings
+keras-facenet>=0.3.2
+
+# Computer Vision
+opencv-python>=4.5.0
+Pillow>=9.0.0
+
+# Data Display
+pandas>=1.5.0
+
+# WebRTC (Webcam)
+streamlit-webrtc>=0.47.0
+av>=10.0.0

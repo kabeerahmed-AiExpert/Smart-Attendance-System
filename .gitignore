@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Streamlit specific
+.streamlit/
+
+# Database
+*.db
+*.sqlite3
+
+# Ignore datasets if they are huge (but output is small so maybe keep it)
+# We will keep the output folder so embeddings are pushed to cloud!
