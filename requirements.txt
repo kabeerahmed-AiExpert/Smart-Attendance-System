@@ -4,6 +4,7 @@
 
 # Web Framework
 streamlit>=1.30.0
+tornado>=6.0.0
 
 # Core ML
 tensorflow-cpu>=2.10.0
