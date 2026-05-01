@@ -300,8 +300,8 @@ class FaceRecognitionProcessor(VideoProcessorBase):
             self.detector, self.facenet = load_models()
             print("[DEBUG] Models loaded successfully.")
         
-        # Phase 8: Process every 3rd frame for performance optimization
-        if self.frame_count % 3 == 0:
+        # Phase 8: Process every 5th frame for extreme performance optimization (prevents freezing)
+        if self.frame_count % 5 == 0:
             rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             
             # Performance Optimization: Resize frames before detection
@@ -444,6 +444,7 @@ def camera_mode():
             video_processor_factory=FaceRecognitionProcessor,
             media_stream_constraints={"video": {"width": 640, "height": 480}, "audio": False},
             rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+            async_processing=True,
         )
         if ctx.state.playing:
             st.success("✅ Camera active. Processing frames in real-time...")
