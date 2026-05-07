@@ -17,8 +17,6 @@ import streamlit as st
 from datetime import datetime
 from PIL import Image
 import base64
-import av
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
 
 # Fix Windows console encoding
 if sys.platform == "win32":
@@ -275,75 +273,6 @@ def process_faces(rgb_frame, detector_model, facenet_model, db, is_upload=False)
     return results
 
 
-    return results
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# WEBRTC PROCESSOR
-# ─────────────────────────────────────────────────────────────────────────────
-class FaceRecognitionProcessor(VideoProcessorBase):
-    def __init__(self):
-        self.frame_count = 0
-        self.session_marked = set()
-        self.unknown_logged = False
-        self.detector = None
-        self.facenet = None
-        self.db = load_database()
-
-    def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
-        img = frame.to_ndarray(format="bgr24")
-        self.frame_count += 1
-        
-        # Initialize models lazily inside the WebRTC thread to prevent Keras crash
-        if self.detector is None:
-            print("[DEBUG] Loading models in WebRTC thread...")
-            self.detector, self.facenet = load_models()
-            print("[DEBUG] Models loaded successfully.")
-        
-        # Phase 8: Process every 5th frame for extreme performance optimization (prevents freezing)
-        if self.frame_count % 5 == 0:
-            rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            
-            # Performance Optimization: Resize frames before detection
-            h, w = rgb.shape[:2]
-            scale = 1.0
-            if w > 640:
-                scale = 640.0 / w
-                rgb_resized = cv2.resize(rgb, (640, int(h * scale)))
-            else:
-                rgb_resized = rgb
-
-            # Phase 3: Unified preprocessing
-            results = process_faces(rgb_resized, self.detector, self.facenet, self.db)
-            
-            # Scale bounding boxes back to original image size
-            if scale != 1.0:
-                scaled_results = []
-                for (x, y, bw, bh, name, conf) in results:
-                    scaled_results.append((
-                        int(x / scale), int(y / scale),
-                        int(bw / scale), int(bh / scale),
-                        name, conf
-                    ))
-                self.last_results = scaled_results
-            else:
-                self.last_results = results
-            
-            for (x, y, w, h, name, conf) in self.last_results:
-                if name != "Unknown":
-                    if name not in self.session_marked:
-                        if insert_attendance(name, "Present", conf):
-                            self.session_marked.add(name)
-                else:
-                    if not self.unknown_logged:
-                        insert_attendance("Unknown", "Unknown", conf)
-                        self.unknown_logged = True
-
-        if hasattr(self, 'last_results'):
-            img = draw_results_on_frame(img, self.last_results)
-            
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HEADER
@@ -432,24 +361,77 @@ def render_metrics():
 # ─────────────────────────────────────────────────────────────────────────────
 # MODES
 # ─────────────────────────────────────────────────────────────────────────────
-def camera_mode():
-    st.markdown("### 📷 Live Camera Recognition")
-    st.info("💡 WebRTC Camera enabled. Make sure your browser allows camera access.")
+def camera_mode(detector, facenet, database):
+    st.markdown("### 📷 Camera Recognition")
+    st.info("💡 Click 'Take Photo' to mark your attendance. This works on all networks!")
     
-    # Phase 1 & 6: Real-time stream with streamlit-webrtc.
-    try:
-        ctx = webrtc_streamer(
-            key="attendance-camera",
-            mode=WebRtcMode.SENDRECV,
-            video_processor_factory=FaceRecognitionProcessor,
-            media_stream_constraints={"video": {"width": 640, "height": 480}, "audio": False},
-            rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-            async_processing=True,
-        )
-        if ctx.state.playing:
-            st.success("✅ Camera active. Processing frames in real-time...")
-    except Exception as e:
-        st.error(f"❌ Error starting camera: {e}")
+    # Built-in Streamlit camera
+    picture = st.camera_input("Take a picture")
+    
+    if picture:
+        st.info("⏳ Processing Image...")
+        try:
+            image = Image.open(picture)
+            img_rgb = np.array(image.convert("RGB"))
+            img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
+        except Exception as e:
+            st.error(f"Error processing camera image: {e}")
+            return
+            
+        with st.spinner("Recognizing faces..."):
+            # Resize image to optimize speed
+            h, w = img_rgb.shape[:2]
+            scale = 1.0
+            if w > 800:
+                scale = 800.0 / w
+                img_rgb = cv2.resize(img_rgb, (800, int(h * scale)))
+                
+            results = process_faces(img_rgb, detector, facenet, database, is_upload=True)
+            
+            # Scale boxes back
+            if scale != 1.0:
+                scaled_results = []
+                for (x, y, bw, bh, name, conf) in results:
+                    scaled_results.append((
+                        int(x / scale), int(y / scale),
+                        int(bw / scale), int(bh / scale),
+                        name, conf
+                    ))
+                results = scaled_results
+
+        if not results:
+            st.warning("⚠️ No face detected. Please try again.")
+            return
+            
+        st.success("✅ Image processed successfully.")
+        
+        # Draw bounding boxes
+        annotated = draw_results_on_frame(img_bgr.copy(), results)
+        st.image(cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB), use_column_width=True)
+
+        for i, (x, y, w, h, name, conf) in enumerate(results):
+            if name != "Unknown":
+                sid, display = parse_student_display_name(name)
+                # Check if already inserted or insert new
+                if insert_attendance(name, "Present", conf):
+                    st.markdown(f"""
+                    <div class="result-item">
+                        <b>✅ {display}</b> (ID: {sid}) — Confidence: {conf:.4f}
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div class="result-item">
+                        <b>⚠️ {display}</b> (ID: {sid}) — Already marked present today.
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                insert_attendance("Unknown", "Unknown", conf)
+                st.markdown(f"""
+                <div class="result-item unknown">
+                    <b>❌ Unknown Face Detected</b> — Confidence: {conf:.4f}
+                </div>
+                """, unsafe_allow_html=True)
 
 def upload_mode(detector, facenet, database):
     # Phase 2: Use st.file_uploader()
@@ -604,7 +586,7 @@ def main():
     st.markdown("<br>", unsafe_allow_html=True)
 
     if mode == "📷 Camera Mode":
-        camera_mode()
+        camera_mode(detector, facenet, database)
     elif mode == "🖼️ Upload Image":
         upload_mode(detector, facenet, database)
     elif mode == "📊 View Attendance":
